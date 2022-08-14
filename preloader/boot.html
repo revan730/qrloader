@@ -1,0 +1,51 @@
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>QRBoot</title>
+    <script type="module">
+        const scanElem = document.getElementById('qrScan');
+        scanElem.addEventListener('click', scanCameraBarcode, false);
+        const videoElem = document.querySelector('#viewfinder');
+
+        async function scanCameraBarcode() {
+            if (navigator.mediaDevices.getUserMedia) {
+                navigator.mediaDevices.getUserMedia({ video: true })
+                    .then(function (stream) {
+                        videoElem.srcObject = stream;
+                        handleScanVideoStream(stream);
+                    })
+            }
+        }
+
+        function handleScanVideoStream(str) {
+            const ic = new ImageCapture(str.getVideoTracks()[0]);
+            setInterval(readCode, 1000, ic);
+        }
+
+        async function readCode(cap) {
+            const bitmap = await cap.grabFrame();
+            const barcodeScanner = new BarcodeDetector();
+            const data = await barcodeScanner.detect(bitmap);
+            if (data[0]) {
+                const rawValue = data[0].rawValue;
+                if (rawValue.startsWith('loader://')) {
+                    const basedComped = rawValue.slice(9);
+                    const b = Uint8Array.from(atob(basedComped), (c) => c.charCodeAt(0));
+                    const ds = new DecompressionStream('gzip');
+                    const wr = ds.writable.getWriter();
+                    wr.write(b);
+                    wr.close();
+                    const decompArr = await (new Response(ds.readable)).arrayBuffer();
+                    const decomp = new TextDecoder().decode(decompArr);
+                    const f = new Function(decomp);
+                    f();
+                }
+            }
+        }
+    </script>
+</head>
+<body>
+<button id="qrScan">Scan</button>
+<video autoplay="true" width="500" height="500" id="viewfinder"></video>
+</body>
+</html>

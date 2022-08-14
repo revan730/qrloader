@@ -1,0 +1,23 @@
+{
+  "name": "qrloader",
+  "version": "1.0.0",
+  "description": "Fun project based on using QR codes as archive parts to load a complete html page",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/revan730/qrloader.git"
+  },
+  "author": "Yevhenii Burlachenko",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/revan730/qrloader/issues"
+  },
+  "homepage": "https://github.com/revan730/qrloader#readme",
+  "dependencies": {
+    "node-gzip": "^1.1.2",
+    "qrcode": "^1.5.1"
+  }
+}
