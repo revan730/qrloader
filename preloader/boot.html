@@ -19,7 +19,17 @@
 
         function handleScanVideoStream(str) {
             const ic = new ImageCapture(str.getVideoTracks()[0]);
-            setInterval(readCode, 1000, ic);
+            window.scanInterval = setInterval(chainBoot, 1000, ic);
+            window.stream = str;
+            //window.readCode = readCode;
+        }
+
+        async function chainBoot(cap) {
+            const c = await readCode(cap);
+            if (c) {
+                const f = new Function(c);
+                f();
+            }
         }
 
         async function readCode(cap) {
@@ -37,15 +47,18 @@
                     wr.close();
                     const decompArr = await (new Response(ds.readable)).arrayBuffer();
                     const decomp = new TextDecoder().decode(decompArr);
-                    const f = new Function(decomp);
-                    f();
+                    return decomp;
                 }
             }
         }
     </script>
 </head>
 <body>
-<button id="qrScan">Scan</button>
-<video autoplay="true" width="500" height="500" id="viewfinder"></video>
+<div>
+    <video autoplay="true" width="500" height="500" id="viewfinder"></video>
+    <button id="qrScan">Scan</button>
+</div>
+<div id="bootUI">
+</div>
 </body>
 </html>

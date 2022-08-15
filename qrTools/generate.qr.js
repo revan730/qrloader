@@ -1,6 +1,8 @@
 'use strict';
+
 const QRCode = require('qrcode');
 const { gzip } = require('node-gzip');
+const crypto = require('crypto');
 
 const generateCompressedQr = async (data, outputPath) => {
     const compressedBasedData = (await gzip(data)).toString('base64');
@@ -12,10 +14,30 @@ const generateBrowserLoadableQr = (data, outputPath) => {
     QRCode.toFile(outputPath, `http://data:text/html;base64,${btoa(data)}`);
 }
 
+const generatePayloadQr = async (dataChunk, outputPath) => {
+    const compressedBasedData = (await gzip(dataChunk)).toString('base64');
+    const sha1 = crypto.createHash('sha1');
+    const hash = sha1.update(compressedBasedData).digest('hex');
+    console.log(`sha1: ${hash}`);
+    QRCode.toFile(outputPath, `loader://${hash}.${compressedBasedData}`);
+}
+
 module.exports = { generateBrowserLoadableQr, generateCompressedQr };
 
 async function test() {
     console.log('Testing');
     await generateCompressedQr('{const newDiv = document.createElement(\'div\');newDiv.innerText = \'This text is created by js from qr code\';const button = document.getElementById("qrScan");document.body.insertBefore(newDiv, button);}', './qr.png');
 }
-test();
+
+async function testBootloader() {
+    console.log('testing bootloader');
+    const dataBased = 'Y29uc3QgYm9vdGxvYWRlck9iaj17aGFzaEFycmF5OlsiYWY1MzM4NTc5Y2Q4ZGIyNWZkMGUxNGZjNTc2M2RhYTM3NzI0MmMwMCIsIjdjZThjOWYyMTgxNmMwYjIwMjg2ZmI1Mzk5NjhmNDdlYzBlNGViYzkiXSxjaHVua3M6bmV3IE1hcCxnZXRSYXdRckRhdGE6YXN5bmMgZnVuY3Rpb24oZSl7Y29uc3QgdD1hd2FpdCBlLmdyYWJGcmFtZSgpLG49bmV3IEJhcmNvZGVEZXRlY3RvcixhPWF3YWl0IG4uZGV0ZWN0KHQpO2lmKGFbMF0pe2NvbnN0IGU9YVswXS5yYXdWYWx1ZTtpZihlLnN0YXJ0c1dpdGgoImxvYWRlcjovLyIpKXtyZXR1cm4gZS5zbGljZSg5KX19fSxnZXRTaGExOmFzeW5jIGZ1bmN0aW9uKGUpe2NvbnN0IHQ9KG5ldyBUZXh0RW5jb2RlcikuZW5jb2RlKGUpLG49YXdhaXQgY3J5cHRvLnN1YnRsZS5kaWdlc3QoIlNIQS0xIix0KTtyZXR1cm4gQXJyYXkuZnJvbShuZXcgVWludDhBcnJheShuKSkubWFwKChlPT5lLnRvU3RyaW5nKDE2KS5wYWRTdGFydCgyLCIwIikpKS5qb2luKCIiKX0sZGVjb21wcmVzczphc3luYyBmdW5jdGlvbihlKXtjb25zdCB0PVVpbnQ4QXJyYXkuZnJvbShhdG9iKGUpLChlPT5lLmNoYXJDb2RlQXQoMCkpKSxuPW5ldyBEZWNvbXByZXNzaW9uU3RyZWFtKCJnemlwIiksYT1uLndyaXRhYmxlLmdldFdyaXRlcigpO2Eud3JpdGUodCksYS5jbG9zZSgpO2NvbnN0IG89YXdhaXQgbmV3IFJlc3BvbnNlKG4ucmVhZGFibGUpLmFycmF5QnVmZmVyKCk7cmV0dXJuKG5ldyBUZXh0RGVjb2RlcikuZGVjb2RlKG8pfSx2aWRlb0NhcHR1cmVJbnRlcnZhbDphc3luYyBmdW5jdGlvbihlKXtjb25zdCB0PWF3YWl0IHRoaXMuZ2V0UmF3UXJEYXRhKGUpO2lmKHQpe2NvbnNvbGUubG9nKCJHb3QgUVIgKGJvb3QpIiksY29uc29sZS5sb2codCk7Y29uc3QgZT10LnNwbGl0KCIuIilbMF0sbj10LnNwbGl0KCIuIilbMV0sYT1hd2FpdCB0aGlzLmdldFNoYTEobik7aWYoY29uc29sZS5sb2coYEV4cGVjdGVkIGhhc2ggJHtlfSwgY2FsY3VsYXRlZDogJHthfWApLGE9PT1lJiZ0aGlzLmhhc2hBcnJheS5maW5kKCh0PT50PT09ZSkpJiYhdGhpcy5jaHVua3MuaGFzKGUpKXtjb25zdCB0PWF3YWl0IHRoaXMuZGVjb21wcmVzcyhuKTtpZih0aGlzLmNodW5rcy5zZXQoZSx0KSx0aGlzLnNldFVJQ2h1bmtMb2FkZWQodGhpcy5oYXNoQXJyYXkuaW5kZXhPZihlKSksdGhpcy5jaHVua3Muc2l6ZT09PXRoaXMuaGFzaEFycmF5Lmxlbmd0aCl7bGV0IGU9IiI7Zm9yKGxldCB0PTA7dDx0aGlzLmhhc2hBcnJheS5sZW5ndGg7dCsrKWNvbnNvbGUubG9nKGBoYXNoIGFycmF5IGVsZW0gJHt0fSBpcyAke3RoaXMuaGFzaEFycmF5W3RdfWApLGUrPXRoaXMuY2h1bmtzLmdldCh0aGlzLmhhc2hBcnJheVt0XSk7Y29uc3QgdD1uZXcgQmxvYihbZV0pLG49ZG9jdW1lbnQuY3JlYXRlRWxlbWVudCgiYSIpO2RvY3VtZW50LmJvZHkuYXBwZW5kQ2hpbGQobiksbi5zdHlsZT0iZGlzcGxheTogbm9uZSI7Y29uc3QgYT13aW5kb3cuVVJMLmNyZWF0ZU9iamVjdFVSTCh0KTtuLmhyZWY9YSxuLmRvd25sb2FkPSJyZXN1bHQiLG4uY2xpY2soKSx3aW5kb3cuVVJMLnJldm9rZU9iamVjdFVSTChhKX19fX0sc2V0VUlDaHVua0xvYWRlZDpmdW5jdGlvbihlKXtkb2N1bWVudC5nZXRFbGVtZW50QnlJZChgaHNoQmxrJHtlfWApLnN0eWxlLmJhY2tncm91bmRDb2xvcj0iZ3JlZW55ZWxsb3cifX07d2luZG93LnFyQm9vdGxvYWRlcj1ib290bG9hZGVyT2JqO2NvbnN0IHVpRGl2PWRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCJib290VUkiKSxoaW50PWRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoInAiKTtoaW50LmlubmVyVGV4dD0iU2Nhbm5lZCBjb2RlczoiLHVpRGl2LmFwcGVuZENoaWxkKGhpbnQpO2NvbnN0IGNodW5rc0Rpdj1kb2N1bWVudC5jcmVhdGVFbGVtZW50KCJkaXYiKTtjaHVua3NEaXYuc3R5bGUuZGlzcGxheT0iZmxleCIsY2h1bmtzRGl2LnN0eWxlLmZsZXhEaXJlY3Rpb249InJvdyIsY2h1bmtzRGl2LnN0eWxlLmdhcD0iMjBweCI7Zm9yKGxldCBlPTA7ZTxib290bG9hZGVyT2JqLmhhc2hBcnJheS5sZW5ndGg7ZSsrKXtjb25zdCB0PWRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoImRpdiIpO3Quc2V0QXR0cmlidXRlKCJpZCIsYGhzaEJsayR7ZX1gKSx0LmlubmVyVGV4dD1gJHtlKzF9YCx0LnN0eWxlLmJvcmRlcj0iMC4ycmVtIG91dHNldCBibGFjayIsdC5zdHlsZS5wYWRkaW5nPSI1cHgiLGNodW5rc0Rpdi5hcHBlbmRDaGlsZCh0KX11aURpdi5hcHBlbmRDaGlsZChjaHVua3NEaXYpLGNsZWFySW50ZXJ2YWwod2luZG93LnNjYW5JbnRlcnZhbCksd2luZG93LnNjYW5JbnRlcnZhbD1zZXRJbnRlcnZhbCgoKCk9Pntjb25zdCBlPW5ldyBJbWFnZUNhcHR1cmUod2luZG93LnN0cmVhbS5nZXRWaWRlb1RyYWNrcygpWzBdKTtib290bG9hZGVyT2JqLnZpZGVvQ2FwdHVyZUludGVydmFsKGUpfSksMWUzKTs=';
+    await generateCompressedQr(atob(dataBased), 'boot.png');
+}
+
+async function testPayload() {
+    console.log('testing payload');
+    await generatePayloadQr('Part 1\n', 'payload.1.png');
+    await generatePayloadQr('Part 2', 'payload.2.png');
+}
+testBootloader();

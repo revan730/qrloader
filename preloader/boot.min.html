@@ -3,11 +3,20 @@
     <meta charset="UTF-8">
     <title>QRBoot</title>
     <script type="module">
-        const scanElem=document.getElementById("qrScan");scanElem.addEventListener("click",scanCameraBarcode,!1);const videoElem=document.querySelector("#viewfinder");async function scanCameraBarcode(){navigator.mediaDevices.getUserMedia&&navigator.mediaDevices.getUserMedia({video:!0}).then(function(a){videoElem.srcObject=a,handleScanVideoStream(a)})}function handleScanVideoStream(a){let b=new ImageCapture(a.getVideoTracks()[0]);setInterval(readCode,1e3,b)}async function readCode(e){let f=await e.grabFrame(),g=new BarcodeDetector,a=await g.detect(f);if(a[0]){let b=a[0].rawValue;if(b.startsWith("loader://")){let h=b.slice(9),i=Uint8Array.from(atob(h),a=>a.charCodeAt(0)),c=new DecompressionStream("gzip"),d=c.writable.getWriter();d.write(i),d.close();let j=await new Response(c.readable).arrayBuffer(),k=new TextDecoder().decode(j),l=new Function(k);l()}}}
+        const scanElem=document.getElementById("qrScan");scanElem.addEventListener("click",scanCameraBarcode,!1);const videoElem=document.querySelector("#viewfinder");async function scanCameraBarcode(){navigator.mediaDevices.getUserMedia&&navigator.mediaDevices.getUserMedia({video:!0}).then(function(a){videoElem.srcObject=a,handleScanVideoStream(a)})}function handleScanVideoStream(a){let b=new ImageCapture(a.getVideoTracks()[0]);window.scanInterval=setInterval(chainBoot,1e3,b),window.stream=a}async function chainBoot(b){let a=await readCode(b);if(a){let c=new Function(a);c()}}async function readCode(e){let f=await e.grabFrame(),g=new BarcodeDetector,a=await g.detect(f);if(a[0]){let b=a[0].rawValue;if(b.startsWith("loader://")){let h=b.slice(9),i=Uint8Array.from(atob(h),a=>a.charCodeAt(0)),c=new DecompressionStream("gzip"),d=c.writable.getWriter();d.write(i),d.close();let j=await new Response(c.readable).arrayBuffer(),k=new TextDecoder().decode(j);return k}}}
     </script>
 </head>
 <body>
-<button id="qrScan">Scan</button>
-<video autoplay="true" width="500" height="500" id="viewfinder"></video>
+<div>
+    <video autoplay="true" width="500" height="500" id="viewfinder"></video>
+    <button id="qrScan">Scan</button>
+</div>
+<div id="bootUI">
+    <p>Scanned QR Codes:</p>
+    <div id="chunksContainer" style="display: flex;flex-direction: row;gap: 20px">
+        <div style="border: 0.2rem outset black;padding: 5px;background-color: greenyellow">1</div>
+        <div style="border: 0.2rem outset black;padding: 5px">2</div>
+    </div>
+</div>
 </body>
 </html>
